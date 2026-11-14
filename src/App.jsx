@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import './App.css';
 
 const NOCODB_URL = 'https://app.nocodb.com/api/v2/tables/mv65qthwqg52b3b/records';
 const API_TOKEN = 'TU_TOKEN_DE_NOCODB_AQUI';
@@ -10,24 +9,31 @@ function SeccionComentarios() {
   const [listaComentarios, setListaComentarios] = useState([]);
   const [cargando, setCargando] = useState(false);
 
-  const obtenerComentarios = async () => {
-    try {
-      const respuesta = await fetch(NOCODB_URL, {
-        method: 'GET',
-        headers: {
-          'xc-token': API_TOKEN,
-          'Content-Type': 'application/json',
-        },
-      });
-      const datos = await respuesta.json();
-      setListaComentarios(datos.list || []);
-    } catch (error) {
-      console.error('Error al cargar comentarios:', error);
-    }
-  };
-
   useEffect(() => {
-    obtenerComentarios();
+    let activo = true;
+
+    const cargarComentarios = async () => {
+      try {
+        const respuesta = await fetch(NOCODB_URL, {
+          method: 'GET',
+          headers: {
+            'xc-token': API_TOKEN,
+            'Content-Type': 'application/json',
+          },
+        });
+        const datos = await respuesta.json();
+        if (activo) {
+          setListaComentarios(datos.list || []);
+        }
+      } catch (error) {
+        console.error('Error al cargar comentarios:', error);
+      }
+    };
+
+    cargarComentarios();
+    return () => {
+      activo = false;
+    };
   }, []);
 
   const enviarComentario = async (e) => {
@@ -51,7 +57,15 @@ function SeccionComentarios() {
       if (respuesta.ok) {
         setNombre('');
         setComentario('');
-        obtenerComentarios();
+        const recarga = await fetch(NOCODB_URL, {
+          method: 'GET',
+          headers: {
+            'xc-token': API_TOKEN,
+            'Content-Type': 'application/json',
+          },
+        });
+        const datos = await recarga.json();
+        setListaComentarios(datos.list || []);
       }
     } catch (error) {
       console.error('Error al guardar:', error);
