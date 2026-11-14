@@ -1,332 +1,186 @@
 import { useState, useEffect } from 'react';
-import './App.css'; // (o los imports que ya tenías)
-function App() {
-  const [sesion, setSesion] = useState(1);
+import './App.css';
 
-  const planes = {
-    1: {
-      fecha: 'Sesión 1 (45-50 min)',
-      tema: 'Uso de la Tecnología Actual: Consumo vs. Creación',
-      objetivo:
-        'Analizar el impacto de las herramientas digitales actuales (redes sociales e IA) en la vida cotidiana y distinguir entre consumo pasivo y uso productivo.',
-      destrezas:
-        'Pensamiento crítico, clasificación de hábitos digitales, identificación de riesgos en la red y trabajo colaborativo.',
-      contenido:
-        '• Herramientas digitales actuales y algoritmos.\n• Riesgos: desinformación, privacidad y distracción.\n• Ciudadanía digital responsable.',
-      recursos:
-        '• Pizarrón y marcadores.\n• Tarjetas de casos reales impresas.\n• Hojas de trabajo y lapiceros.',
-      actividad:
-        '1. Inicio (10 min): Diagnóstico "Mi huella diaria" clasificando apps usadas en las últimas 24h.\n2. Desarrollo (25 min): Análisis en equipos de 4 casos cotidianos sobre redes sociales e IA, definiendo problema, consecuencias y 2 acuerdos de uso.\n3. Cierre (15 min): Plenaria de 2 minutos por equipo y síntesis en el pizarrón.'
-    },
-    2: {
-      fecha: 'Sesión 2 (45-50 min)',
-      tema: 'Introducción al Desarrollo de Páginas Web (HTML)',
-      objetivo:
-        'Comprender cómo funciona una página web en el navegador y estructurar un documento básico utilizando etiquetas fundamentales de HTML.',
-      destrezas:
-        'Pensamiento lógico, sintaxis básica de marcado (HTML), organización visual de interfaces (wireframing) y creatividad digital.',
-      contenido:
-        '• Funcionamiento de navegador y código fuente.\n• Estructura base: <html>, <head>, <body>.\n• Etiquetas de texto: <h1>, <p>, listas y enlaces.',
-      recursos:
-        '• Computadoras con editor de texto / Vite.\n• Proyector multimedia.\n• Plantillas de bocetos web (wireframes).',
-      actividad:
-        '1. Inicio (10 min): Analogía "La construcción de una casa" (HTML estructura, CSS diseño, JS movimiento).\n2. Desarrollo (25 min): Taller práctico escribiendo el código de "Mi primera página web" y visualizándolo en el navegador.\n3. Cierre (15 min): Mini-feria de proyectos web mostrando los resultados en pantalla o boceto.'
+const NOCODB_URL = 'https://app.nocodb.com/api/v2/tables/mv65qthwqg52b3b/records';
+const API_TOKEN = 'TU_TOKEN_DE_NOCODB_AQUI';
+
+function SeccionComentarios() {
+  const [nombre, setNombre] = useState('');
+  const [comentario, setComentario] = useState('');
+  const [listaComentarios, setListaComentarios] = useState([]);
+  const [cargando, setCargando] = useState(false);
+
+  const obtenerComentarios = async () => {
+    try {
+      const respuesta = await fetch(NOCODB_URL, {
+        method: 'GET',
+        headers: {
+          'xc-token': API_TOKEN,
+          'Content-Type': 'application/json',
+        },
+      });
+      const datos = await respuesta.json();
+      setListaComentarios(datos.list || []);
+    } catch (error) {
+      console.error('Error al cargar comentarios:', error);
     }
   };
 
-  const datos = planes[sesion];
+  useEffect(() => {
+    obtenerComentarios();
+  }, []);
+
+  const enviarComentario = async (e) => {
+    e.preventDefault();
+    if (!nombre.trim() || !comentario.trim()) return;
+
+    setCargando(true);
+    try {
+      const respuesta = await fetch(NOCODB_URL, {
+        method: 'POST',
+        headers: {
+          'xc-token': API_TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Nombre: nombre,
+          Comentario: comentario,
+        }),
+      });
+
+      if (respuesta.ok) {
+        setNombre('');
+        setComentario('');
+        obtenerComentarios();
+      }
+    } catch (error) {
+      console.error('Error al guardar:', error);
+    } finally {
+      setCargando(false);
+    }
+  };
 
   return (
-    <div className="pagina-fondo">
-      {/* Selector superior para cambiar de sesión */}
-      <div className="barra-sesiones">
-        <button
-          className={sesion === 1 ? 'tab-activa' : 'tab'}
-          onClick={() => setSesion(1)}
-        >
-          Ver Sesión 1: Tecnología Actual
+    <div style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#fff', border: '1px solid #119c73', borderRadius: '8px' }}>
+      <h3 style={{ color: '#119c73', marginBottom: '15px' }}>Comentarios y Retroalimentación</h3>
+
+      <form onSubmit={enviarComentario} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          placeholder="Tu nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
+        <textarea
+          placeholder="Escribe tu comentario, duda o aporte sobre la clase..."
+          value={comentario}
+          onChange={(e) => setComentario(e.target.value)}
+          required
+          rows="3"
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
+        <button type="submit" disabled={cargando} style={{ padding: '10px', backgroundColor: '#119c73', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          {cargando ? 'Enviando...' : 'Publicar Comentario'}
         </button>
-        <button
-          className={sesion === 2 ? 'tab-activa' : 'tab'}
-          onClick={() => setSesion(2)}
-        >
-          Ver Sesión 2: Páginas Web (HTML)
-        </button>
-      </div>
+      </form>
 
-      {/* Hoja estilo formato de plan de clase */}
-      <div className="hoja-plan">
-        {/* Banner superior verde */}
-        <header className="banner-superior">
-          <h1>Formato de Plan de clase</h1>
-          <h2>Tecnologías del Aprendizaje y la Comunicación (TAC)</h2>
-        </header>
-
-        {/* Título coral */}
-        <div className="seccion-titulo">
-          <h3 className="titulo-coral">Plan de clase</h3>
-        </div>
-
-        {/* Datos generales con líneas verdes */}
-        <div className="datos-generales">
-          <div className="fila-datos">
-            <div className="campo">
-              <span className="etiqueta-campo">Curso:</span>
-              <span className="linea-dato">Segundo Básico</span>
-            </div>
-            <div className="campo">
-              <span className="etiqueta-campo">Asignatura:</span>
-              <span className="linea-dato">Computación / TAC</span>
-            </div>
-            <div className="campo">
-              <span className="etiqueta-campo">Fecha:</span>
-              <span className="linea-dato">{datos.fecha}</span>
-            </div>
+      <div>
+        {listaComentarios.map((item) => (
+          <div key={item.Id} style={{ padding: '12px', borderBottom: '1px solid #eee', marginBottom: '8px', backgroundColor: '#f9f9f9', borderRadius: '6px' }}>
+            <strong style={{ color: '#119c73' }}>{item.Nombre}</strong>
+            <p style={{ margin: '5px 0 0', color: '#333' }}>{item.Comentario}</p>
           </div>
-
-          <div className="fila-datos fila-segunda">
-            <div className="campo campo-grande">
-              <span className="etiqueta-campo">Tema:</span>
-              <span className="linea-dato">{datos.tema}</span>
-            </div>
-            <div className="campo campo-mediano">
-              <span className="etiqueta-campo">Docente:</span>
-              <span className="linea-dato">Prof. Faustino Calel Salam</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Cuadrícula de bloques verdes */}
-        <div className="grid-bloques">
-          <div className="bloque">
-            <div className="bloque-header">OBJETIVO</div>
-            <div className="bloque-cuerpo">{datos.objetivo}</div>
-          </div>
-
-          <div className="bloque">
-            <div className="bloque-header">DESTREZAS</div>
-            <div className="bloque-cuerpo">{datos.destrezas}</div>
-          </div>
-
-          <div className="bloque">
-            <div className="bloque-header">CONTENIDO</div>
-            <div className="bloque-cuerpo texto-pre">{datos.contenido}</div>
-          </div>
-
-          <div className="bloque">
-            <div className="bloque-header">RECURSOS</div>
-            <div className="bloque-cuerpo texto-pre">{datos.recursos}</div>
-          </div>
-        </div>
-
-        {/* Bloque ancho inferior */}
-        <div className="bloque bloque-ancho">
-          <div className="bloque-header">ACTIVIDAD</div>
-          <div className="bloque-cuerpo texto-pre">{datos.actividad}</div>
-        </div>
+        ))}
       </div>
     </div>
   );
 }
 
-export default App;import { useState, useEffect } from 'react';
-
-// Reemplaza estos valores con los de tu cuenta de NocoDB
-const NOCODB_URL = 'https://app.nocodb.com/api/v3/data/pi7zdtgxtl7aopg/mv65qthwqg52b3b/records?pageSize=25';
-const API_TOKEN = 'https://app.nocodb.com/account/tokens';
-
-export default function SeccionComentarios() {
-  const [nombre, setNombre] = useState('');
-  const [comentario, setComentario] = useState('');
-  const [listaComentarios, setListaComentarios] = useState([]);
-  const [cargando, setCargando] = useState(false);
-
-  // 1. Obtener los registros existentes (GET)
-  const obtenerComentarios = async () => {
-    try {
-      const respuesta = await fetch(NOCODB_URL, {
-        method: 'GET',
-        headers: {
-          'xc-token': API_TOKEN,
-          'Content-Type': 'application/json',
-        },
-      });
-      const datos = await respuesta.json();
-      setListaComentarios(datos.list || []);
-    } catch (error) {
-      console.error('Error al cargar comentarios:', error);
-    }
-  };
-
-  useEffect(() => {
-    obtenerComentarios();
-  }, []);
-
-  // 2. Guardar un nuevo registro en NocoDB (POST)
-  const enviarComentario = async (e) => {
-    e.preventDefault();
-    if (!nombre.trim() || !comentario.trim()) return;
-
-    setCargando(true);
-    try {
-      const respuesta = await fetch(NOCODB_URL, {
-        method: 'POST',
-        headers: {
-          'xc-token': API_TOKEN,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          Nombre: nombre,
-          Comentario: comentario,
-        }),
-      });
-
-      if (respuesta.ok) {
-        setNombre('');
-        setComentario('');
-        obtenerComentarios(); // Recarga la lista automáticamente
-      }
-    } catch (error) {
-      console.error('Error al guardar:', error);
-    } finally {
-      setCargando(false);
-    }
-  };
+export default function App() {
+  const estiloSeccion = { border: '2px solid #119c73', padding: '15px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#fff' };
+  const estiloTitulo = { backgroundColor: '#119c73', color: 'white', padding: '8px', textAlign: 'center', borderRadius: '4px', marginBottom: '10px', fontSize: '1.1rem' };
 
   return (
-    <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h3>Comentarios de la Clase</h3>
-
-      <form onSubmit={enviarComentario} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Tu nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          style={{ padding: '8px' }}
-        />
-        <textarea
-          placeholder="Escribe tu comentario sobre la clase..."
-          value={comentario}
-          onChange={(e) => setComentario(e.target.value)}
-          required
-          rows="3"
-          style={{ padding: '8px' }}
-        />
-        <button type="submit" disabled={cargando} style={{ padding: '10px', backgroundColor: '#119c73', color: 'white', border: 'none', cursor: 'pointer' }}>
-          {cargando ? 'Enviando...' : 'Publicar Comentario'}
-        </button>
-      </form>
-
-      <div>
-        {listaComentarios.map((item) => (
-          <div key={item.Id} style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-            <strong>{item.Nombre}</strong>
-            <p style={{ margin: '5px 0 0' }}>{item.Comentario}</p>
-          </div>
-        ))}
+    <div className="container" style={{ padding: '20px', maxWidth: '850px', margin: '0 auto', fontFamily: 'Arial, sans-serif', color: '#333' }}>
+      
+      {/* Encabezado */}
+      <div style={{ textAlign: 'center', marginBottom: '25px', borderBottom: '2px solid #119c73', paddingBottom: '15px' }}>
+        <h1 style={{ color: '#119c73', fontSize: '1.8rem', marginBottom: '10px' }}>Uso de la Tecnología Actual: Consumo vs. Creación</h1>
+        <p style={{ fontSize: '1.1rem' }}><strong>Docente:</strong> Prof. Faustino Calel Salam</p>
+        <p style={{ fontSize: '0.95rem', color: '#666' }}><strong>Área / Subárea:</strong> Tecnologías de la Información y Comunicación</p>
       </div>
-    </div>
-  );
-}import { useState, useEffect } from 'react';
 
-// Reemplaza estos valores con los de tu cuenta de NocoDB
-const NOCODB_URL = 'https://app.nocodb.com/api/v2/tables/mv65qthwqg52b3b/records';
-const API_TOKEN = 'TU_TOKEN_DE_NOCODB_AQUI';
-
-export default function SeccionComentarios() {
-  const [nombre, setNombre] = useState('');
-  const [comentario, setComentario] = useState('');
-  const [listaComentarios, setListaComentarios] = useState([]);
-  const [cargando, setCargando] = useState(false);
-
-  // 1. Obtener los registros existentes (GET)
-  const obtenerComentarios = async () => {
-    try {
-      const respuesta = await fetch(NOCODB_URL, {
-        method: 'GET',
-        headers: {
-          'xc-token': API_TOKEN,
-          'Content-Type': 'application/json',
-        },
-      });
-      const datos = await respuesta.json();
-      setListaComentarios(datos.list || []);
-    } catch (error) {
-      console.error('Error al cargar comentarios:', error);
-    }
-  };
-
-  useEffect(() => {
-    obtenerComentarios();
-  }, []);
-
-  // 2. Guardar un nuevo registro en NocoDB (POST)
-  const enviarComentario = async (e) => {
-    e.preventDefault();
-    if (!nombre.trim() || !comentario.trim()) return;
-
-    setCargando(true);
-    try {
-      const respuesta = await fetch(NOCODB_URL, {
-        method: 'POST',
-        headers: {
-          'xc-token': API_TOKEN,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          Nombre: nombre,
-          Comentario: comentario,
-        }),
-      });
-
-      if (respuesta.ok) {
-        setNombre('');
-        setComentario('');
-        obtenerComentarios(); // Recarga la lista automáticamente
-      }
-    } catch (error) {
-      console.error('Error al guardar:', error);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  return (
-    <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h3>Comentarios de la Clase</h3>
-
-      <form onSubmit={enviarComentario} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Tu nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          style={{ padding: '8px' }}
-        />
-        <textarea
-          placeholder="Escribe tu comentario sobre la clase..."
-          value={comentario}
-          onChange={(e) => setComentario(e.target.value)}
-          required
-          rows="3"
-          style={{ padding: '8px' }}
-        />
-        <button type="submit" disabled={cargando} style={{ padding: '10px', backgroundColor: '#119c73', color: 'white', border: 'none', cursor: 'pointer' }}>
-          {cargando ? 'Enviando...' : 'Publicar Comentario'}
-        </button>
-      </form>
-
-      <div>
-        {listaComentarios.map((item) => (
-          <div key={item.Id} style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-            <strong>{item.Nombre}</strong>
-            <p style={{ margin: '5px 0 0' }}>{item.Comentario}</p>
-          </div>
-        ))}
+      {/* Competencia */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>COMPETENCIA</h3>
+        <p>Utiliza herramientas digitales y recursos de inteligencia artificial de manera crítica, ética y productiva para la resolución de problemas cotidianos y la creación de contenidos originales.</p>
       </div>
+
+      {/* Indicadores de Logro */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>INDICADORES DE LOGRO</h3>
+        <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>Diferencia con claridad entre el consumo pasivo de contenidos digitales y la producción activa mediante tecnología.</li>
+          <li>Analiza el impacto social, cognitivo y ético del uso frecuente de redes sociales y sistemas de inteligencia artificial.</li>
+          <li>Propone alternativas de aprovechamiento constructivo y seguro de las herramientas tecnológicas en su entorno.</li>
+        </ul>
+      </div>
+
+      {/* Contenidos */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>CONTENIDOS</h3>
+        <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>Declarativos:</strong> Redes sociales, consumo pasivo vs. creación digital, y principios básicos de Inteligencia Artificial en la vida diaria.</li>
+          <li><strong>Procedimentales:</strong> Clasificación y auditoría del tiempo de uso de aplicaciones en dispositivos móviles; análisis crítico de casos cotidianos.</li>
+          <li><strong>Actitudinales:</strong> Conciencia crítica, autorregulación en el uso de pantallas y responsabilidad digital.</li>
+        </ul>
+      </div>
+
+      {/* Objetivo */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>OBJETIVO DE LA CLASE</h3>
+        <p>Analizar el impacto de las herramientas digitales actuales (redes sociales e IA) en la vida cotidiana y distinguir entre consumo pasivo y uso productivo.</p>
+      </div>
+
+      {/* Actividades / Fases Metodológicas */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>FASES METODOLÓGICAS Y ACTIVIDADES</h3>
+        <div style={{ lineHeight: '1.6' }}>
+          <p><strong>1. Inicio (10 min):</strong> Diagnóstico interactivo titulado <em>"Mi huella diaria"</em>, clasificando y tabulando las aplicaciones utilizadas en las últimas 24 horas.</p>
+          <p><strong>2. Desarrollo (25 min):</strong> Trabajo en equipo analizando 4 casos cotidianos sobre redes sociales e inteligencia artificial; definición de problemas, consecuencias y establecimiento de 2 acuerdos de uso responsable.</p>
+          <p><strong>3. Cierre (15 min):</strong> Plenaria de 2 minutos por equipo y síntesis conceptual general plasmada en el pizarrón.</p>
+        </div>
+      </div>
+
+      {/* Recursos */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>RECURSOS Y MATERIALES</h3>
+        <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>Dispositivos móviles o computadoras con acceso a internet.</li>
+          <li>Pizarrón, marcadores y hojas de trabajo impresas.</li>
+          <li>Plataforma web interactiva integrada con base de datos en NocoDB para registro y comentarios.</li>
+        </ul>
+      </div>
+
+      {/* Evaluación */}
+      <div style={estiloSeccion}>
+        <h3 style={estiloTitulo}>EVALUACIÓN</h3>
+        <p><strong>Criterios:</strong> Participación activa, capacidad de análisis crítico en los casos de estudio, trabajo colaborativo y aportes constructivos registrados en la plataforma digital de la clase.</p>
+        <p style={{ marginTop: '8px' }}><strong>Técnica / Instrumento:</strong> Observación directa y lista de cotejo.</p>
+      </div>
+
+      {/* Sección de Comentarios Conectada a NocoDB */}
+      <SeccionComentarios />
+
+      {/* Pie de Página */}
+      <footer style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid #ccc', textAlign: 'center', color: '#555', fontSize: '0.9rem' }}>
+        <p style={{ fontWeight: 'bold', color: '#119c73', marginBottom: '5px' }}>Plan de Clase Digital</p>
+        <p style={{ margin: '3px 0' }}>Programación de Aplicaciones Web • Universidad Rafael Landívar</p>
+        <p style={{ margin: '3px 0' }}>Desarrollado por Fauster Calel</p>
+        <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#777' }}>© 2026 Todos los derechos reservados</p>
+      </footer>
     </div>
   );
 }
